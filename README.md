@@ -1,6 +1,7 @@
 # ADO Template Finder
 
-Edge extension that finds template references in Azure DevOps YAML pipeline files and turns them into clickable links.
+Edge extension that finds template references in Azure DevOps YAML pipeline files and turns them into clickable links. 
+Very useful for hunting down template files referenced, and variables in other repos without having to open a bunch of tabs and search through repos for stuff. Can save a lot of time!
 
 ## Features
 <img width="1301" height="779" alt="Screenshot 2026-03-05 091846" src="https://github.com/user-attachments/assets/ab975bfe-cd05-41e2-ae19-3ebcdaccf4e7" />
@@ -24,7 +25,7 @@ Edge extension that finds template references in Azure DevOps YAML pipeline file
 6. With the full merged variable map, it resolves `template: ${{ variables.X_resources }}` to the actual file path and builds a clickable ADO URL
 7. Results are shown in a floating sidebar panel, grouped by category
 
-## Install (cus its not on edge store)
+## Install (bcus its not on edge store yet)
 
 1. Go to `edge://extensions/`
 2. Enable **Developer mode**
@@ -44,5 +45,6 @@ Edge extension that finds template references in Azure DevOps YAML pipeline file
 - Variables defined in repos not listed in `resources.repositories` (e.g., OneBranch system repos) cannot be resolved
 - The YAML parser is regex-based, not a full AST parser — works for standard pipeline patterns but may miss unusual formatting
 - Only follows one level of variable template includes (does not recursively fetch templates referenced inside fetched templates)
+
 
 
