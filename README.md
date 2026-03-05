@@ -43,8 +43,9 @@ Very useful for hunting down template files referenced, and variables in other r
 
 - Wont grab stuff in outer scope (e.g stuff that INHERITS the current resource. It wouldnt know where to look) 
 - Variables defined in repos not listed in `resources.repositories` (e.g., OneBranch system repos) cannot be resolved
-- The YAML parser is regex-based, not a full AST parser — works for standard pipeline patterns but may miss unusual formatting
+- The YAML parser is regex-based, not a full AST parser.... it works for standard pipeline patterns but may miss unusual formatting
 - Only follows one level of variable template includes (does not recursively fetch templates referenced inside fetched templates)
+
 
 
 
