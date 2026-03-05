@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      width: 300px;
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13px;
+      color: #333;
+      padding: 16px;
+    }
+    h1 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #0078d4;
+    }
+    p {
+      margin-bottom: 10px;
+      line-height: 1.5;
+      color: #555;
+    }
+    .status {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .status.active {
+      background: #e6f4ea;
+      color: #137333;
+    }
+    .status.inactive {
+      background: #fef7e0;
+      color: #8a6d3b;
+    }
+    .footer {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <h1>ADO Template Finder</h1>
+  <p>
+  </p>
+  <div id="status"></div>
+  <div class="footer">
+    Navigate to a YAML pipeline file in ADO to see template links.
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

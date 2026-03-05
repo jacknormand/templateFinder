@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "ADO Template Finder",
+  "version": "1.0.0",
+  "description": "Finds and links to YAML pipeline templates referenced in Azure DevOps pipeline files.",
+  "permissions": ["activeTab"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://dev.azure.com/*",
+        "https://*.visualstudio.com/*"
+      ],
+      "js": ["content/content.js"],
+      "css": ["content/content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

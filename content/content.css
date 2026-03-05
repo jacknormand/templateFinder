@@ -1,0 +1,441 @@
+/* =============================================================================
+   ADO Template Finder — Content Script Styles
+   ============================================================================= */
+
+/* ---------- Toggle button (always visible when templates found) ---------- */
+#ado-tf-toggle {
+  position: fixed;
+  top: 60px;
+  right: 20px;
+  z-index: 100000;
+  background: #0078d4;
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  transition: background 0.2s, transform 0.15s;
+  font-family: "Segoe UI", sans-serif;
+}
+
+#ado-tf-toggle:hover {
+  background: #106ebe;
+  transform: scale(1.05);
+}
+
+#ado-tf-toggle strong {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.ado-tf-toggle-extra {
+  opacity: 0.7;
+  font-weight: 400;
+  font-size: 12px;
+}
+
+/* ---------- Panel ---------- */
+#ado-tf-panel {
+  position: fixed;
+  top: 60px;
+  right: 16px;
+  width: 380px;
+  max-height: calc(100vh - 100px);
+  z-index: 100001;
+  background: #fff;
+  border: 1px solid #e1e4e8;
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+#ado-tf-panel.ado-tf-collapsed {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(20px);
+}
+
+/* ---------- Header ---------- */
+.ado-tf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #0078d4;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.ado-tf-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.ado-tf-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.ado-tf-close:hover {
+  opacity: 1;
+}
+
+/* ---------- Body ---------- */
+.ado-tf-body {
+  overflow-y: auto;
+  padding: 8px 0;
+  flex: 1;
+}
+
+/* ---------- Group header (repo name) ---------- */
+.ado-tf-group-header {
+  padding: 8px 14px 4px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #586069;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.ado-tf-group-header:first-child {
+  border-top: none;
+}
+
+/* ---------- Row ---------- */
+.ado-tf-row {
+  padding: 4px 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Link ---------- */
+.ado-tf-link {
+  color: #0366d6;
+  text-decoration: none;
+  word-break: break-all;
+  display: inline;
+  padding: 3px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.ado-tf-link:hover {
+  background: #f1f8ff;
+  text-decoration: underline;
+}
+
+.ado-tf-link::before {
+  content: "";
+}
+
+/* ---------- Section header (category) ---------- */
+.ado-tf-section {
+  border-top: 1px solid #e1e4e8;
+}
+
+.ado-tf-section:first-child {
+  border-top: none;
+}
+
+.ado-tf-section-header {
+  padding: 10px 14px 6px;
+  font-weight: 700;
+  font-size: 12px;
+  color: #24292e;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s;
+}
+
+.ado-tf-section-header:hover {
+  background: #f6f8fa;
+}
+
+.ado-tf-section-toggle {
+  font-size: 10px;
+  color: #586069;
+  width: 12px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ado-tf-section-body {
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}
+
+.ado-tf-section-body.ado-tf-section-collapsed {
+  max-height: 0 !important;
+  overflow: hidden;
+}
+
+/* ---------- Badge (variable name) ---------- */
+.ado-tf-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: #e8f0fe;
+  color: #1a73e8;
+  font-family: "Cascadia Code", "Consolas", monospace;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ado-tf-badge-resolved {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+/* ---------- Definition source row ---------- */
+.ado-tf-def-row {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  margin-top: 2px;
+  padding-left: 24px;
+  width: 100%;
+}
+
+.ado-tf-def-label {
+  font-size: 11px;
+  color: #8b949e;
+  white-space: nowrap;
+}
+
+.ado-tf-def-link {
+  font-size: 11px;
+  color: #586069;
+  text-decoration: none;
+  word-break: break-all;
+  transition: color 0.15s;
+}
+
+.ado-tf-def-link:hover {
+  color: #0366d6;
+  text-decoration: underline;
+}
+
+.ado-tf-def-link::before {
+  content: "";
+}
+
+/* ---------- Unresolved ---------- */
+.ado-tf-unresolved {
+  color: #959da5;
+  font-style: italic;
+  word-break: break-all;
+  display: inline-block;
+  padding: 3px 6px;
+}
+
+.ado-tf-unresolved::before {
+  content: "";
+}
+
+/* ---------- Loading ---------- */
+.ado-tf-loading {
+  padding: 20px 14px;
+  color: #586069;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+/* ---------- Spinner ---------- */
+.ado-tf-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e1e4e8;
+  border-top-color: #0078d4;
+  border-radius: 50%;
+  animation: ado-tf-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes ado-tf-spin {
+  to { transform: rotate(360deg); }
+}
+
+#ado-tf-toggle .ado-tf-spinner {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+  border-color: rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+/* ---------- Scrollbar ---------- */
+.ado-tf-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ado-tf-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ado-tf-body::-webkit-scrollbar-thumb {
+  background: #c8c8c8;
+  border-radius: 3px;
+}
+
+/* ---------- Dark theme support (ADO dark mode) ---------- */
+@media (prefers-color-scheme: dark) {
+  #ado-tf-panel {
+    background: #1e1e1e;
+    border-color: #444;
+  }
+
+  .ado-tf-link {
+    color: #58a6ff;
+  }
+
+  .ado-tf-link:hover {
+    background: #1c2d3f;
+  }
+
+  .ado-tf-group-header {
+    color: #8b949e;
+    border-top-color: #333;
+  }
+
+  .ado-tf-section-header {
+    color: #c9d1d9;
+    border-top-color: #444;
+  }
+
+  .ado-tf-section-header:hover {
+    background: #2a2a2a;
+  }
+
+  .ado-tf-section-toggle {
+    color: #8b949e;
+  }
+
+  .ado-tf-badge {
+    background: #1c2d3f;
+    color: #58a6ff;
+  }
+
+  .ado-tf-badge-resolved {
+    background: #1a3a2a;
+    color: #3fb950;
+  }
+
+  .ado-tf-def-label {
+    color: #6e7681;
+  }
+
+  .ado-tf-def-link {
+    color: #8b949e;
+  }
+
+  .ado-tf-def-link:hover {
+    color: #58a6ff;
+  }
+
+  .ado-tf-unresolved {
+    color: #6e7681;
+  }
+
+  .ado-tf-body::-webkit-scrollbar-thumb {
+    background: #555;
+  }
+}
+
+/* Also detect ADO's own dark theme class */
+body.theme-dark #ado-tf-panel,
+body[data-theme="dark"] #ado-tf-panel {
+  background: #1e1e1e;
+  border-color: #444;
+}
+
+body.theme-dark .ado-tf-link,
+body[data-theme="dark"] .ado-tf-link {
+  color: #58a6ff;
+}
+
+body.theme-dark .ado-tf-link:hover,
+body[data-theme="dark"] .ado-tf-link:hover {
+  background: #1c2d3f;
+}
+
+body.theme-dark .ado-tf-group-header,
+body[data-theme="dark"] .ado-tf-group-header {
+  color: #8b949e;
+  border-top-color: #333;
+}
+
+body.theme-dark .ado-tf-section-header,
+body[data-theme="dark"] .ado-tf-section-header {
+  color: #c9d1d9;
+  border-top-color: #444;
+}
+
+body.theme-dark .ado-tf-section-header:hover,
+body[data-theme="dark"] .ado-tf-section-header:hover {
+  background: #2a2a2a;
+}
+
+body.theme-dark .ado-tf-section-toggle,
+body[data-theme="dark"] .ado-tf-section-toggle {
+  color: #8b949e;
+}
+
+body.theme-dark .ado-tf-section,
+body[data-theme="dark"] .ado-tf-section {
+  border-top-color: #444;
+}
+
+body.theme-dark .ado-tf-badge,
+body[data-theme="dark"] .ado-tf-badge {
+  background: #1c2d3f;
+  color: #58a6ff;
+}
+
+body.theme-dark .ado-tf-badge-resolved,
+body[data-theme="dark"] .ado-tf-badge-resolved {
+  background: #1a3a2a;
+  color: #3fb950;
+}
+
+body.theme-dark .ado-tf-def-label,
+body[data-theme="dark"] .ado-tf-def-label {
+  color: #6e7681;
+}
+
+body.theme-dark .ado-tf-def-link,
+body[data-theme="dark"] .ado-tf-def-link {
+  color: #8b949e;
+}
+
+body.theme-dark .ado-tf-def-link:hover,
+body[data-theme="dark"] .ado-tf-def-link:hover {
+  color: #58a6ff;
+}
