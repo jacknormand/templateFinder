@@ -20,8 +20,8 @@ Edge extension that finds template references in Azure DevOps YAML pipeline file
 2. It fetches the **full file content** via the ADO Git Items REST API (uses your session cookies)
 3. It parses `resources.repositories` to build a map of repo aliases to actual repo names
 4. It parses local variables (`- name: X` / `value: Y` and simple `Key: value` formats)
-5. It finds all `- template:` lines that reference other YAML files with variables in the path (e.g., `${{variables.buildType}}`), resolves those variables, then **fetches the referenced files** to extract more variables
-6. With the full merged variable map, it resolves `template: ${{ variables.EV2_Resources }}` to the actual file path and builds a clickable ADO URL
+5. It finds all `- template:` lines that reference other YAML files with variables in the path (e.g., `${{variables.x_buildtype}}`), resolves those variables, then **fetches the referenced files** to extract more variables
+6. With the full merged variable map, it resolves `template: ${{ variables.X_resources }}` to the actual file path and builds a clickable ADO URL
 7. Results are shown in a floating sidebar panel, grouped by category
 
 ## Install (cus its not on edge store)
@@ -44,4 +44,5 @@ Edge extension that finds template references in Azure DevOps YAML pipeline file
 - Variables defined in repos not listed in `resources.repositories` (e.g., OneBranch system repos) cannot be resolved
 - The YAML parser is regex-based, not a full AST parser — works for standard pipeline patterns but may miss unusual formatting
 - Only follows one level of variable template includes (does not recursively fetch templates referenced inside fetched templates)
+
 
