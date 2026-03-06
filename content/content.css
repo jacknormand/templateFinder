@@ -141,10 +141,6 @@
   text-decoration: underline;
 }
 
-.ado-tf-link::before {
-  content: "";
-}
-
 /* ---------- Section header (category) ---------- */
 .ado-tf-section {
   border-top: 1px solid #e1e4e8;
@@ -249,10 +245,6 @@
   text-decoration: underline;
 }
 
-.ado-tf-def-link::before {
-  content: "";
-}
-
 /* ---------- Unresolved ---------- */
 .ado-tf-unresolved {
   color: #959da5;
@@ -260,10 +252,6 @@
   word-break: break-all;
   display: inline-block;
   padding: 3px 6px;
-}
-
-.ado-tf-unresolved::before {
-  content: "";
 }
 
 /* ---------- Loading ---------- */
@@ -318,142 +306,40 @@
   border-radius: 3px;
 }
 
-/* ---------- Dark theme support (ADO dark mode) ---------- */
+/* ---------- Dark theme support ---------- */
+/* Covers OS-level dark mode AND ADO's own dark theme classes */
 @media (prefers-color-scheme: dark) {
-  #ado-tf-panel {
-    background: #1e1e1e;
-    border-color: #444;
-  }
-
-  .ado-tf-link {
-    color: #58a6ff;
-  }
-
-  .ado-tf-link:hover {
-    background: #1c2d3f;
-  }
-
-  .ado-tf-group-header {
-    color: #8b949e;
-    border-top-color: #333;
-  }
-
-  .ado-tf-section-header {
-    color: #c9d1d9;
-    border-top-color: #444;
-  }
-
-  .ado-tf-section-header:hover {
-    background: #2a2a2a;
-  }
-
-  .ado-tf-section-toggle {
-    color: #8b949e;
-  }
-
-  .ado-tf-badge {
-    background: #1c2d3f;
-    color: #58a6ff;
-  }
-
-  .ado-tf-badge-resolved {
-    background: #1a3a2a;
-    color: #3fb950;
-  }
-
-  .ado-tf-line-badge {
-    background: #333;
-    color: #8b949e;
-  }
-
-  .ado-tf-def-label {
-    color: #6e7681;
-  }
-
-  .ado-tf-def-link {
-    color: #8b949e;
-  }
-
-  .ado-tf-def-link:hover {
-    color: #58a6ff;
-  }
-
-  .ado-tf-unresolved {
-    color: #6e7681;
-  }
-
-  .ado-tf-body::-webkit-scrollbar-thumb {
-    background: #555;
-  }
+  #ado-tf-panel { background: #1e1e1e; border-color: #444; }
+  .ado-tf-link { color: #58a6ff; }
+  .ado-tf-link:hover { background: #1c2d3f; }
+  .ado-tf-group-header { color: #8b949e; border-top-color: #333; }
+  .ado-tf-section { border-top-color: #444; }
+  .ado-tf-section-header { color: #c9d1d9; }
+  .ado-tf-section-header:hover { background: #2a2a2a; }
+  .ado-tf-section-toggle { color: #8b949e; }
+  .ado-tf-badge { background: #1c2d3f; color: #58a6ff; }
+  .ado-tf-badge-resolved { background: #1a3a2a; color: #3fb950; }
+  .ado-tf-line-badge { background: #333; color: #8b949e; }
+  .ado-tf-def-label { color: #6e7681; }
+  .ado-tf-def-link { color: #8b949e; }
+  .ado-tf-def-link:hover { color: #58a6ff; }
+  .ado-tf-unresolved { color: #6e7681; }
+  .ado-tf-body::-webkit-scrollbar-thumb { background: #555; }
 }
 
-/* Also detect ADO's own dark theme class */
-body.theme-dark #ado-tf-panel,
-body[data-theme="dark"] #ado-tf-panel {
-  background: #1e1e1e;
-  border-color: #444;
-}
-
-body.theme-dark .ado-tf-link,
-body[data-theme="dark"] .ado-tf-link {
-  color: #58a6ff;
-}
-
-body.theme-dark .ado-tf-link:hover,
-body[data-theme="dark"] .ado-tf-link:hover {
-  background: #1c2d3f;
-}
-
-body.theme-dark .ado-tf-group-header,
-body[data-theme="dark"] .ado-tf-group-header {
-  color: #8b949e;
-  border-top-color: #333;
-}
-
-body.theme-dark .ado-tf-section-header,
-body[data-theme="dark"] .ado-tf-section-header {
-  color: #c9d1d9;
-  border-top-color: #444;
-}
-
-body.theme-dark .ado-tf-section-header:hover,
-body[data-theme="dark"] .ado-tf-section-header:hover {
-  background: #2a2a2a;
-}
-
-body.theme-dark .ado-tf-section-toggle,
-body[data-theme="dark"] .ado-tf-section-toggle {
-  color: #8b949e;
-}
-
-body.theme-dark .ado-tf-section,
-body[data-theme="dark"] .ado-tf-section {
-  border-top-color: #444;
-}
-
-body.theme-dark .ado-tf-badge,
-body[data-theme="dark"] .ado-tf-badge {
-  background: #1c2d3f;
-  color: #58a6ff;
-}
-
-body.theme-dark .ado-tf-badge-resolved,
-body[data-theme="dark"] .ado-tf-badge-resolved {
-  background: #1a3a2a;
-  color: #3fb950;
-}
-
-body.theme-dark .ado-tf-def-label,
-body[data-theme="dark"] .ado-tf-def-label {
-  color: #6e7681;
-}
-
-body.theme-dark .ado-tf-def-link,
-body[data-theme="dark"] .ado-tf-def-link {
-  color: #8b949e;
-}
-
-body.theme-dark .ado-tf-def-link:hover,
-body[data-theme="dark"] .ado-tf-def-link:hover {
-  color: #58a6ff;
+/* ADO's own dark theme class overrides */
+body.theme-dark, body[data-theme="dark"] {
+  & #ado-tf-panel { background: #1e1e1e; border-color: #444; }
+  & .ado-tf-link { color: #58a6ff; }
+  & .ado-tf-link:hover { background: #1c2d3f; }
+  & .ado-tf-group-header { color: #8b949e; border-top-color: #333; }
+  & .ado-tf-section { border-top-color: #444; }
+  & .ado-tf-section-header { color: #c9d1d9; }
+  & .ado-tf-section-header:hover { background: #2a2a2a; }
+  & .ado-tf-section-toggle { color: #8b949e; }
+  & .ado-tf-badge { background: #1c2d3f; color: #58a6ff; }
+  & .ado-tf-badge-resolved { background: #1a3a2a; color: #3fb950; }
+  & .ado-tf-def-label { color: #6e7681; }
+  & .ado-tf-def-link { color: #8b949e; }
+  & .ado-tf-def-link:hover { color: #58a6ff; }
 }
