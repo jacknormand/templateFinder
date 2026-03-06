@@ -207,6 +207,19 @@
   color: #137333;
 }
 
+/* ---------- Line number badge ---------- */
+.ado-tf-line-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #f0f0f0;
+  color: #666;
+  font-family: "Cascadia Code", "Consolas", monospace;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* ---------- Definition source row ---------- */
 .ado-tf-def-row {
   display: flex;
@@ -346,6 +359,11 @@
   .ado-tf-badge-resolved {
     background: #1a3a2a;
     color: #3fb950;
+  }
+
+  .ado-tf-line-badge {
+    background: #333;
+    color: #8b949e;
   }
 
   .ado-tf-def-label {

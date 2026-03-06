@@ -1,10 +1,10 @@
 # ADO Template Finder
 
-Edge extension that finds template references in Azure DevOps YAML pipeline files and turns them into clickable links. 
-Very useful for hunting down template files referenced, and variables in other repos without having to open a bunch of tabs and search through repos for stuff. Can save a lot of time!
+Edge extension that finds template references in Azure DevOps YAML pipeline files and turns them into clickable links.
 
 ## Features
-<img width="1301" height="779" alt="Screenshot 2026-03-05 091846" src="https://github.com/user-attachments/assets/ab975bfe-cd05-41e2-ae19-3ebcdaccf4e7" />
+<img width="1301" height="779" alt="Screenshot 2026-03-05 091846" src="https://github.com/user-attachments/assets/11287a60-5217-4c63-b592-20c269da3e16" />
+
 
 - Detects `template:` references in pipeline YAML files
 - Resolves `@RepoAlias` using `resources.repositories` declarations
@@ -21,11 +21,11 @@ Very useful for hunting down template files referenced, and variables in other r
 2. It fetches the **full file content** via the ADO Git Items REST API (uses your session cookies)
 3. It parses `resources.repositories` to build a map of repo aliases to actual repo names
 4. It parses local variables (`- name: X` / `value: Y` and simple `Key: value` formats)
-5. It finds all `- template:` lines that reference other YAML files with variables in the path (e.g., `${{variables.x_buildtype}}`), resolves those variables, then **fetches the referenced files** to extract more variables
-6. With the full merged variable map, it resolves `template: ${{ variables.X_resources }}` to the actual file path and builds a clickable ADO URL
+5. It finds all `- template:` lines that reference other YAML files with variables in the path (e.g., `${{variables.buildType}}`), resolves those variables, then **fetches the referenced files** to extract more variables
+6. With the full merged variable map, it resolves `template: ${{ variables.EV2_Resources }}` to the actual file path and builds a clickable ADO URL
 7. Results are shown in a floating sidebar panel, grouped by category
 
-## Install (bcus its not on edge store yet)
+## Install (cus its not on edge store)
 
 1. Go to `edge://extensions/`
 2. Enable **Developer mode**
@@ -43,9 +43,5 @@ Very useful for hunting down template files referenced, and variables in other r
 
 - Wont grab stuff in outer scope (e.g stuff that INHERITS the current resource. It wouldnt know where to look) 
 - Variables defined in repos not listed in `resources.repositories` (e.g., OneBranch system repos) cannot be resolved
-- The YAML parser is regex-based, not a full AST parser.... it works for standard pipeline patterns but may miss unusual formatting
+- The YAML parser is regex-based, not a full AST parser — works for standard pipeline patterns but may miss unusual formatting
 - Only follows one level of variable template includes (does not recursively fetch templates referenced inside fetched templates)
-
-
-
-

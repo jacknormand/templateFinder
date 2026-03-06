@@ -65,7 +65,7 @@
     }
   }
 
-  function buildAdoFileUrl(ctx, repoName, filePath, ref) {
+  function buildAdoFileUrl(ctx, repoName, filePath, ref, line) {
     let normPath = filePath.replace(/\\/g, "/").replace(/^\.\//, "").replace(/^\//, "");
     normPath = "/" + normPath;
 
@@ -90,7 +90,12 @@
       }
     }
 
-    return `${base}?path=${encodeURIComponent(normPath)}${version}`;
+    let lineParam = "";
+    if (line) {
+      lineParam = `&line=${line}&lineEnd=${line}&lineStartColumn=1&lineEndColumn=999&lineStyle=plain`;
+    }
+
+    return `${base}?path=${encodeURIComponent(normPath)}${version}${lineParam}`;
   }
 
   // =========================================================================
@@ -193,30 +198,37 @@
 
   function parseVariables(yaml) {
     const vars = {};
+    // Track line numbers: varName → lineNumber (1-based)
+    const varLines = {};
 
     // Format 1: - name: X \n    value: Y (standard ADO variable template)
-    const nameValueRegex =
-      /-\s*name:\s*['"]?([^'"\n]+?)['"]?\s*\n\s*value:\s*['"]?([^'"\n]+?)['"]?\s*(?:\n|$)/g;
-    let m;
-    while ((m = nameValueRegex.exec(yaml)) !== null) {
-      vars[m[1].trim()] = m[2].trim();
+    // Use line-by-line to track line numbers
+    const lines = yaml.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      const nameMatch = line.match(/^-\s*name:\s*['"]?([^'"\n]+?)['"]?\s*$/);
+      if (nameMatch && i + 1 < lines.length) {
+        const valueLine = lines[i + 1].trim();
+        const valueMatch = valueLine.match(/^value:\s*['"]?([^'"\n]+?)['"]?\s*$/);
+        if (valueMatch) {
+          const key = nameMatch[1].trim();
+          vars[key] = valueMatch[1].trim();
+          varLines[key] = i + 1; // 1-based, on the name line
+        }
+      }
     }
 
     // Format 2: Simple key: value under a variables: block
-    // e.g.  EV2_Resources: ev2/common/OneBranch.Resources.Release.yml@mdaTemplates
-    const lines = yaml.split('\n');
     let inVariablesBlock = false;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const trimmed = line.trim();
 
-      // Detect variables: block start
       if (/^variables\s*:/.test(trimmed)) {
         inVariablesBlock = true;
         continue;
       }
 
-      // End of variables block: non-indented line that starts a new top-level key
       if (inVariablesBlock && /^\S/.test(line) && !/^\s*#/.test(line) && !line.startsWith(' ')) {
         if (/^\w[\w.]*\s*:/.test(trimmed) && !trimmed.startsWith('-')) {
           inVariablesBlock = false;
@@ -225,19 +237,18 @@
 
       if (!inVariablesBlock) continue;
 
-      // Match simple key: value (indented, not a - name: / - template: line)
       const simpleKV = trimmed.match(/^([A-Za-z_]\w*)\s*:\s*['"]?(.+?)['"]?\s*$/);
       if (simpleKV && !trimmed.startsWith('-')) {
         const key = simpleKV[1];
         const val = simpleKV[2];
-        // Don't overwrite existing vars (name/value format takes precedence)
         if (!vars[key]) {
           vars[key] = val;
+          varLines[key] = i + 1; // 1-based
         }
       }
     }
 
-    return vars;
+    return { vars, varLines };
   }
 
   /**
@@ -316,10 +327,13 @@
   function parseTemplateRefs(yaml) {
     const refs = [];
     const seen = new Set();
-    const templateRegex = /(?:^|\n)\s*-?\s*template:\s*(.+)/g;
+    const lines = yaml.split('\n');
 
-    let m;
-    while ((m = templateRegex.exec(yaml)) !== null) {
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      const m = trimmed.match(/^-?\s*template:\s*(.+)/);
+      if (!m) continue;
+
       let raw = m[1].trim().replace(/^['"]|['"]$/g, "").replace(/\s*#.*$/, "");
       if (seen.has(raw)) continue;
       seen.add(raw);
@@ -338,7 +352,7 @@
         repoAlias = null;
       }
 
-      refs.push({ raw, path, repoAlias, resolvable: !hasVars, isPureVar, type: "direct" });
+      refs.push({ raw, path, repoAlias, resolvable: !hasVars, isPureVar, type: "direct", lineNumber: i + 1 });
     }
     return refs;
   }
@@ -368,7 +382,7 @@
     if (!ctx.org || !ctx.project) return [];
 
     const repoMap = parseResourceRepos(yaml);
-    const localVars = parseVariables(yaml);
+    const { vars: localVars, varLines: localVarLines } = parseVariables(yaml);
 
     console.log(`[ADO Template Finder] Local variables found: ${Object.keys(localVars).length}`,
       Object.keys(localVars));
@@ -378,7 +392,8 @@
     // Pass localVars so ${{variables.buildType}} etc. are resolved in paths
     const varTemplateIncludes = findVariableTemplateIncludes(yaml, localVars);
     const externalVars = {};
-    // Track which file each variable was defined in: varName → { path, repoName, ref }
+    const externalVarLines = {};
+    // Track which file each variable was defined in: varName → { path, repoName, ref, line }
     const varSources = {};
 
     // Fetch in parallel
@@ -395,7 +410,7 @@
       console.log(`[ADO Template Finder] Fetching variable template: ${repoName}:${vti.path} (ref: ${ref})`);
       const content = await fetchFileContent(ctx, repoName, vti.path, ref);
       if (content) {
-        const vars = parseVariables(content);
+        const { vars, varLines } = parseVariables(content);
         console.log(`[ADO Template Finder] Variables found in ${vti.path}: ${Object.keys(vars).length}`,
           Object.keys(vars).slice(0, 20));
         // Record source for each variable
@@ -405,7 +420,9 @@
             repoName: repoName,
             ref: ref,
             repoAlias: vti.repoAlias,
+            line: varLines[varName] || null,
           };
+          externalVarLines[varName] = varLines[varName] || null;
         }
         Object.assign(externalVars, vars);
       } else {
@@ -451,6 +468,7 @@
         path: tpl.path,
         type: tpl.type,
         resolvedVia: null,
+        lineNumber: tpl.lineNumber || null,
       };
 
       if (!tpl.resolvable && tpl.isPureVar) {
@@ -467,9 +485,10 @@
           // Add source info — where was this variable defined?
           const src = varSources[varNameMatch[1]];
           if (src) {
-            entry.definedInUrl = buildAdoFileUrl(ctx, src.repoName, src.path, src.ref);
+            entry.definedInUrl = buildAdoFileUrl(ctx, src.repoName, src.path, src.ref, src.line);
             entry.definedInPath = src.path;
             entry.definedInRepo = src.repoName;
+            entry.definedInLine = src.line;
           }
         }
       } else if (!tpl.resolvable) {
@@ -527,8 +546,7 @@
 
       // Skip if repo alias can't be resolved (e.g. VstsTemplates not in resources)
       // unless the variable is actually used in a template: line
-      // BUT: if there are NO resource repos at all (standalone variable file),
-      // show everything and fall back to current repo
+      // In standalone files (no resources block), still show them but as unresolved
       if (iv.repoAlias && hasResourceRepos) {
         const repo = repoMap[iv.repoAlias];
         if (!repo && !usedVarNames.has(iv.varName)) {
@@ -554,12 +572,11 @@
         if (repo) {
           entry.repoName = repo.name;
           entry.url = buildAdoFileUrl(ctx, repo.name, iv.path, repo.ref);
-        } else if (!hasResourceRepos) {
-          // Standalone variable file — assume alias refers to current repo
-          entry.repoName = ctx.repo;
-          entry.url = buildAdoFileUrl(ctx, ctx.repo, iv.path);
         } else {
-          entry.label = `${iv.raw}  (repo "${iv.repoAlias}" not in resources)`;
+          // Repo alias can't be resolved — mark as unresolved
+          // (even in standalone files — an explicit @Alias means a specific repo)
+          entry.resolvable = false;
+          entry.label = `${iv.path} @${iv.repoAlias}`;
         }
       } else {
         entry.repoName = ctx.repo;
@@ -640,7 +657,7 @@
 
       renderSection(body, "Templates", directResolved, "", false);
       renderSection(body, "Resolved via Variables", varResolved, "", false);
-      renderSection(body, "Available Template Variables", indirect, "", indirect.length > 8);
+      renderSection(body, "Available Template Variables", indirect, "", true);
       renderSection(body, "Unresolved", unresolved, "", true);
     }
 
@@ -701,6 +718,15 @@
           a.title = item.url;
           row.appendChild(a);
 
+          // Show line number badge if available
+          if (item.lineNumber) {
+            const lineBadge = document.createElement("span");
+            lineBadge.className = "ado-tf-line-badge";
+            lineBadge.textContent = `L${item.lineNumber}`;
+            lineBadge.title = `Line ${item.lineNumber} in this file`;
+            row.appendChild(lineBadge);
+          }
+
           if (item.varName) {
             const badge = document.createElement("span");
             badge.className = "ado-tf-badge";
@@ -728,8 +754,8 @@
             defLink.target = "_blank";
             defLink.rel = "noopener";
             defLink.className = "ado-tf-def-link";
-            defLink.textContent = item.definedInPath;
-            defLink.title = `Defined in ${item.definedInRepo}: ${item.definedInPath}`;
+            defLink.textContent = item.definedInPath + (item.definedInLine ? `:${item.definedInLine}` : '');
+            defLink.title = `Defined in ${item.definedInRepo}: ${item.definedInPath}${item.definedInLine ? ' (line ' + item.definedInLine + ')' : ''}`;
             defRow.appendChild(defLink);
             row.appendChild(defRow);
           }
@@ -738,6 +764,14 @@
           span.className = "ado-tf-unresolved";
           span.textContent = item.label || item.raw;
           row.appendChild(span);
+
+          if (item.lineNumber) {
+            const lineBadge = document.createElement("span");
+            lineBadge.className = "ado-tf-line-badge";
+            lineBadge.textContent = `L${item.lineNumber}`;
+            lineBadge.title = `Line ${item.lineNumber} in this file`;
+            row.appendChild(lineBadge);
+          }
         }
 
         sectionBody.appendChild(row);
