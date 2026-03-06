@@ -3,7 +3,8 @@
 Edge extension that finds template references in Azure DevOps YAML pipeline files and turns them into clickable links.
 
 ## Features
-<img width="1301" height="779" alt="Screenshot 2026-03-05 091846" src="https://github.com/user-attachments/assets/11287a60-5217-4c63-b592-20c269da3e16" />
+<img width="826" height="491" alt="Screenshot 2026-03-04 093516" src="https://github.com/user-attachments/assets/b5f51159-bc4f-4daa-a842-f7bf5c0af835" />
+
 
 
 - Detects `template:` references in pipeline YAML files
@@ -45,3 +46,4 @@ Edge extension that finds template references in Azure DevOps YAML pipeline file
 - Variables defined in repos not listed in `resources.repositories` (e.g., OneBranch system repos) cannot be resolved
 - The YAML parser is regex-based, not a full AST parser — works for standard pipeline patterns but may miss unusual formatting
 - Only follows one level of variable template includes (does not recursively fetch templates referenced inside fetched templates)
+
