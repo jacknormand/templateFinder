@@ -51,7 +51,6 @@
     const ver = url.searchParams.get("version");
     if (ver) {
       if (ver.startsWith("GB")) branch = ver.substring(2);
-      else if (ver.startsWith("GT")) branch = null; // tag, handled differently
     }
 
     return { org, project, repo, filePath, branch, hostname: url.hostname };
@@ -274,11 +273,12 @@
 
       let raw = m[1].trim();
 
-      // Resolve ${{ variables.X }} in the path using local variables
+      // Resolve ${{ variables.X }} in the path using local variables (case-insensitive)
       let resolvedRaw = raw.replace(
         /\$\{\{\s*variables\.(\w+)\s*\}\}/g,
         (match, varName) => {
-          return localVars[varName] !== undefined ? localVars[varName] : match;
+          const found = lookupVar(localVars, varName);
+          return found ? found.value : match;
         }
       );
 
@@ -313,12 +313,28 @@
     return results;
   }
 
+  /**
+   * Case-insensitive variable lookup. ADO variables are case-insensitive.
+   * Returns { key, value } where key is the actual key in the map, or null.
+   */
+  function lookupVar(vars, name) {
+    // Try exact match first (fast path)
+    if (vars[name] !== undefined) return { key: name, value: vars[name] };
+    // Case-insensitive fallback
+    const lower = name.toLowerCase();
+    for (const k of Object.keys(vars)) {
+      if (k.toLowerCase() === lower) return { key: k, value: vars[k] };
+    }
+    return null;
+  }
+
   function resolveVariableExpr(expr, vars) {
     const resolved = expr.replace(
       /\$\{\{\s*variables\.(\w+)\s*\}\}|\$\{\{\s*variables\['([^']+)'\]\s*\}\}/g,
       (match, name1, name2) => {
         const name = name1 || name2;
-        return vars[name] !== undefined ? vars[name] : match;
+        const found = lookupVar(vars, name);
+        return found ? found.value : match;
       }
     );
     return /\$\{\{.*?\}\}/.test(resolved) ? null : resolved;
@@ -392,7 +408,6 @@
     // Pass localVars so ${{variables.buildType}} etc. are resolved in paths
     const varTemplateIncludes = findVariableTemplateIncludes(yaml, localVars);
     const externalVars = {};
-    const externalVarLines = {};
     // Track which file each variable was defined in: varName → { path, repoName, ref, line }
     const varSources = {};
 
@@ -422,7 +437,6 @@
             repoAlias: vti.repoAlias,
             line: varLines[varName] || null,
           };
-          externalVarLines[varName] = varLines[varName] || null;
         }
         Object.assign(externalVars, vars);
       } else {
@@ -441,14 +455,14 @@
 
     const templateRefs = parseTemplateRefs(yaml);
 
-    // Collect variable names actually referenced in template: lines
+    // Collect variable names actually referenced in template: lines (lowercase for case-insensitive matching)
     const usedVarNames = new Set();
     for (const tpl of templateRefs) {
       const m = tpl.raw.match(/\$\{\{\s*variables\.(\w+)\s*\}\}/g);
       if (m) {
         for (const expr of m) {
           const nameMatch = expr.match(/variables\.(\w+)/);
-          if (nameMatch) usedVarNames.add(nameMatch[1]);
+          if (nameMatch) usedVarNames.add(nameMatch[1].toLowerCase());
         }
       }
     }
@@ -473,22 +487,26 @@
 
       if (!tpl.resolvable && tpl.isPureVar) {
         const varNameMatch = tpl.raw.match(/\$\{\{\s*variables\.(\w+)\s*\}\}/);
-        if (varNameMatch && allVars[varNameMatch[1]]) {
-          const resolvedValue = allVars[varNameMatch[1]];
-          const cleanVal = resolvedValue.replace(/^['"]|['"]$/g, "");
-          const atIdx = cleanVal.lastIndexOf("@");
-          entry.resolvable = true;
-          entry.path = atIdx > 0 ? cleanVal.substring(0, atIdx) : cleanVal;
-          entry.repoAlias = atIdx > 0 ? cleanVal.substring(atIdx + 1) : null;
-          entry.resolvedVia = varNameMatch[1];
+        if (varNameMatch) {
+          const found = lookupVar(allVars, varNameMatch[1]);
+          if (found) {
+            const resolvedValue = found.value;
+            const actualKey = found.key;
+            const cleanVal = resolvedValue.replace(/^['"]|['"]$/g, "");
+            const atIdx = cleanVal.lastIndexOf("@");
+            entry.resolvable = true;
+            entry.path = atIdx > 0 ? cleanVal.substring(0, atIdx) : cleanVal;
+            entry.repoAlias = atIdx > 0 ? cleanVal.substring(atIdx + 1) : null;
+            entry.resolvedVia = actualKey;
 
-          // Add source info — where was this variable defined?
-          const src = varSources[varNameMatch[1]];
-          if (src) {
-            entry.definedInUrl = buildAdoFileUrl(ctx, src.repoName, src.path, src.ref, src.line);
-            entry.definedInPath = src.path;
-            entry.definedInRepo = src.repoName;
-            entry.definedInLine = src.line;
+            // Add source info — where was this variable defined?
+            const src = varSources[actualKey];
+            if (src) {
+              entry.definedInUrl = buildAdoFileUrl(ctx, src.repoName, src.path, src.ref, src.line);
+              entry.definedInPath = src.path;
+              entry.definedInRepo = src.repoName;
+              entry.definedInLine = src.line;
+            }
           }
         }
       } else if (!tpl.resolvable) {
@@ -504,7 +522,27 @@
       }
 
       if (!entry.resolvable) {
-        entry.label = tpl.raw + "  (unresolved variable)";
+        // Even though the final destination can't be resolved, try to find
+        // where the variable is defined so we can still link to the source
+        const varNameMatch = tpl.raw.match(/\$\{\{\s*variables\.(\w+)\s*\}\}/);
+        if (varNameMatch) {
+          const found = lookupVar(allVars, varNameMatch[1]);
+          if (found) {
+            entry.label = `${found.value}`;
+            entry.resolvedVia = found.key;
+            const src = varSources[found.key];
+            if (src) {
+              entry.definedInUrl = buildAdoFileUrl(ctx, src.repoName, src.path, src.ref, src.line);
+              entry.definedInPath = src.path;
+              entry.definedInRepo = src.repoName;
+              entry.definedInLine = src.line;
+            }
+          } else {
+            entry.label = tpl.raw + "  (unresolved variable)";
+          }
+        } else {
+          entry.label = tpl.raw + "  (unresolved variable)";
+        }
         results.push(entry);
         continue;
       }
@@ -519,7 +557,18 @@
           entry.url = buildAdoFileUrl(ctx, repo.name, effectivePath, repo.ref);
           entry.label = effectivePath;
         } else {
-          entry.label = `${tpl.raw}  (repo "${effectiveAlias}" not in resources)`;
+          entry.label = `${effectivePath} @${effectiveAlias}`;
+          entry.url = null; // Can't link — repo not in resources
+          // But still show where the variable is defined
+          if (entry.resolvedVia && !entry.definedInUrl) {
+            const src = varSources[entry.resolvedVia];
+            if (src) {
+              entry.definedInUrl = buildAdoFileUrl(ctx, src.repoName, src.path, src.ref, src.line);
+              entry.definedInPath = src.path;
+              entry.definedInRepo = src.repoName;
+              entry.definedInLine = src.line;
+            }
+          }
         }
       } else {
         entry.repoName = ctx.repo;
@@ -549,7 +598,7 @@
       // In standalone files (no resources block), still show them but as unresolved
       if (iv.repoAlias && hasResourceRepos) {
         const repo = repoMap[iv.repoAlias];
-        if (!repo && !usedVarNames.has(iv.varName)) {
+        if (!repo && !usedVarNames.has(iv.varName.toLowerCase())) {
           // Not resolvable and not used — skip (reduces noise)
           continue;
         }
@@ -563,7 +612,7 @@
         repoName: null,
         repoAlias: iv.repoAlias,
         path: iv.path,
-        type: usedVarNames.has(iv.varName) ? "indirect-used" : "indirect",
+        type: usedVarNames.has(iv.varName.toLowerCase()) ? "indirect-used" : "indirect",
         varName: iv.varName,
       };
 
@@ -655,10 +704,10 @@
         toggleEl.innerHTML = `<strong>TF</strong>: ${actionableCount}` + (unresolved.length > 0 ? ` <span class="ado-tf-toggle-extra">(+${unresolved.length})</span>` : '');
       }
 
-      renderSection(body, "Templates", directResolved, "", false);
-      renderSection(body, "Resolved via Variables", varResolved, "", false);
-      renderSection(body, "Available Template Variables", indirect, "", true);
-      renderSection(body, "Unresolved", unresolved, "", true);
+      renderSection(body, "Templates", directResolved, false);
+      renderSection(body, "Resolved via Variables", varResolved, false);
+      renderSection(body, "Available Template Variables", indirect, true);
+      renderSection(body, "Unresolved", unresolved, true);
     }
 
     panel.appendChild(body);
@@ -669,7 +718,7 @@
     });
   }
 
-  function renderSection(body, title, items, icon, startCollapsed) {
+  function renderSection(body, title, items, startCollapsed) {
     if (items.length === 0) return;
 
     const section = document.createElement("div");
@@ -678,7 +727,7 @@
     const sectionHeader = document.createElement("div");
     sectionHeader.className = "ado-tf-section-header";
     sectionHeader.setAttribute("role", "button");
-    sectionHeader.innerHTML = `<span class="ado-tf-section-toggle">${startCollapsed ? '▶' : '▼'}</span> ${icon} ${title} (${items.length})`;
+    sectionHeader.innerHTML = `<span class="ado-tf-section-toggle">${startCollapsed ? '\u25b6' : '\u25bc'}</span> ${title} (${items.length})`;
     section.appendChild(sectionHeader);
 
     const sectionBody = document.createElement("div");
@@ -765,12 +814,38 @@
           span.textContent = item.label || item.raw;
           row.appendChild(span);
 
+          if (item.resolvedVia) {
+            const badge = document.createElement("span");
+            badge.className = "ado-tf-badge ado-tf-badge-resolved";
+            badge.textContent = `via $${item.resolvedVia}`;
+            row.appendChild(badge);
+          }
+
           if (item.lineNumber) {
             const lineBadge = document.createElement("span");
             lineBadge.className = "ado-tf-line-badge";
             lineBadge.textContent = `L${item.lineNumber}`;
             lineBadge.title = `Line ${item.lineNumber} in this file`;
             row.appendChild(lineBadge);
+          }
+
+          // Show "defined in" link even for unresolved entries
+          if (item.definedInUrl) {
+            const defRow = document.createElement("div");
+            defRow.className = "ado-tf-def-row";
+            const defLabel = document.createElement("span");
+            defLabel.className = "ado-tf-def-label";
+            defLabel.textContent = "defined in ";
+            defRow.appendChild(defLabel);
+            const defLink = document.createElement("a");
+            defLink.href = item.definedInUrl;
+            defLink.target = "_blank";
+            defLink.rel = "noopener";
+            defLink.className = "ado-tf-def-link";
+            defLink.textContent = item.definedInPath + (item.definedInLine ? `:${item.definedInLine}` : '');
+            defLink.title = `Defined in ${item.definedInRepo}: ${item.definedInPath}`;
+            defRow.appendChild(defLink);
+            row.appendChild(defRow);
           }
         }
 
@@ -897,23 +972,18 @@
 
   // Watch for SPA navigation
   let lastUrl = window.location.href;
-  const observer = new MutationObserver(() => {
+  function handleUrlChange() {
     if (window.location.href !== lastUrl) {
       lastUrl = window.location.href;
       lastAnalyzedUrl = null;
       fileCache.clear();
       scheduleRun();
     }
-  });
+  }
+
+  const observer = new MutationObserver(handleUrlChange);
   observer.observe(document.body, { childList: true, subtree: true });
 
   // Also poll in case URL doesn't change but content does (e.g., branch switch)
-  setInterval(() => {
-    if (window.location.href !== lastUrl) {
-      lastUrl = window.location.href;
-      lastAnalyzedUrl = null;
-      fileCache.clear();
-      scheduleRun();
-    }
-  }, POLL_INTERVAL_MS);
+  setInterval(handleUrlChange, POLL_INTERVAL_MS);
 })();

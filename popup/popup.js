@@ -15,8 +15,7 @@
       tab.url.includes("visualstudio.com");
 
     if (isAdo) {
-      const isYaml =
-        /\.ya?ml/i.test(tab.url) || /\/_git\//i.test(tab.url);
+      const isYaml = /\.ya?ml/i.test(tab.url);
 
       if (isYaml) {
         statusEl.className = "status active";
